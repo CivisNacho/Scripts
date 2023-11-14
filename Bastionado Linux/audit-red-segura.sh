@@ -6,38 +6,80 @@ then
     echo "Comprobando que IPv6 está deshabilitado..."
     echo ""
     IP6RESUL=`ip -6 address`
-
+    
     if [ -z $IP6RESUL ]
-        then
-            echo "IPv6 está deshabilitado"
-            echo ""
-            read -p "El script se pausará hasta que pulse la tecla Intro, asegúrese de remediar los errores de ser necesario."
-            clear
-        else
-            echo "IPv6 está habilitado"
-            echo ""
-            echo "Para deshabilitarlo siga estos pasos:"
-            echo ""
-            echo "sudo nano /etc/default/grub"
-            echo ""
-            echo "En el fichero añadir GRUB_CMDLINE_LINUX=ipv6.disable=1, encomillando ipv6.disable=1"
-            echo ""
-            echo "Luego ejecute sudo update-grub"
-            echo ""
-            echo "Instrucciones en la página 177 del CIS Ubuntu 20.04 o la página 42 de la guía de bastionado."
-            echo ""
-            read -p "El script se pausará hasta que pulse la tecla Intro, asegúrese de remediar los errores de ser necesario."
-            clear
+    then
+        echo "IPv6 está deshabilitado"
+        echo ""
+        read -p "El script se pausará hasta que pulse la tecla Intro, asegúrese de remediar los errores de ser necesario."
+        clear
+    else
+        echo -n "IPv6 está habilitado en caso de que desee deshabilitarla escriba S/s,
+        cualquier otra tecla en caso de que desee omitir: "
+        read resp
+        case $resp in
+            [S/s])
+                echo "Deshabilitando IPV6..."
+                sleep 1
+                sed -i '/^GRUB_CMDLINE_LINUX=/ s/"$/ ipv6.disable=1"/' "/etc/default/grub"
+                update-grub
+                echo "Completado."
+            ;;
+            [*])
+            echo -e "Omitiendo.\n";;
+        esac
+        echo "Instrucciones en la página 177 del CIS Ubuntu 20.04\n"
     fi
-
+    
     echo "Comprobando ICMP redirect..."
     echo ""
     echo "El resultado de los comandos que se ejecuten a continuación debería retornar =0."
     echo ""
-    sysctl net.ipv4.conf.all.send_redirects
-    echo ""
-    sysctl net.ipv4.conf.default.send_redirects
-    echo ""
+    # Comprueba si la redirección ICMP está habilitada.
+    redireccionICMP=$(sysctl net.ipv4.conf.all.send_redirects)
+    if [[ "$redireccionICMP" == *"net.ipv4.conf.all.send_redirects = 1"* ]];
+    then
+        echo -n "La redirección ICMP está habilitada, en caso de que desee deshabilitarla escriba S/s,
+        cualquier otra tecla en caso de que desee omitir: "
+        read resp
+        case $resp in
+            [S/s])
+                echo "Deshabilitando la redirección ICMP..."
+                sleep 1
+                sysctl -w net.ipv4.conf.all.send_redirects=0
+                sysctl -w net.ipv4.conf.all.accept_redirects=0
+                echo "Completado."
+            ;;
+            [*])
+            echo -e "Omitiendo.\n";;
+        esac
+    else
+        echo -e "La redirección ICMP está deshabilitada.\n"
+    fi
+    
+    
+    # Comprobación de redirección ICMP en todas las interfaces.
+    redireccionIcmpGlobal=$(sysctl net.ipv4.conf.default.send_redirects)
+    if [[ "$redireccionIcmpGlobal" == *"net.ipv4.conf.all.send_redirects = 1"* ]];
+    then
+        echo -n "La redirección ICMP en las interfaces está habilitada, en caso de que desee deshabilitarla escriba S/s,
+        cualquier otra tecla en caso de que desee omitir: "
+        read resp
+        case $resp in
+            [S/s])
+                echo "Deshabilitando la redirección ICMP..."
+                sleep 1
+                sysctl -w net.ipv4.conf.default.send_redirects=0
+                sysctl -w net.ipv4.conf.default.accept_redirects=0
+                echo "Completado."
+            ;;
+            [*])
+            echo -e "Omitiendo.\n";;
+        esac
+    else
+        echo -e "La redirección ICMP en las interfaces está deshabilitada.\n"
+    fi
+    grep -E "^\s*#?\s*net\.ipv4\.conf\.all\.accept_redirects\s*=\s*1"
     grep -E "^\s*net\.ipv4\.conf\.all\.send_redirects" /etc/sysctl.conf /etc/sysctl.d/*
     echo ""
     grep -E "^\s*net\.ipv4\.conf\.default\.send_redirects" /etc/sysctl.conf /etc/sysctl.d/*
@@ -56,13 +98,11 @@ then
     echo ""
     echo "Y ejecute los siguientes comandos también:"
     echo ""
-    echo "sysctl -w net.ipv4.conf.all.send_redirects=0"
-    echo "sysctl -w net.ipv4.conf.default.send_redirects=0"
     echo "sysctl -w net.ipv4.route.flush=1"
     echo ""
     read -p "El script se pausará hasta que pulse la tecla Intro, asegúrese de remediar los errores de ser necesario."
     clear
-
+    
     echo "Comprobando que IP Forwarding está deshabilitado..."
     echo "Los comandos ejecutados a continuación deberían retornar =0, y nada más."
     echo ""
@@ -76,7 +116,7 @@ then
     echo ""
     read -p "El script se pausará hasta que pulse la tecla Intro, asegúrese de remediar los errores de ser necesario."
     clear
-
+    
     echo "Comprobando que las respuestas ICMP Broadcast están deshabilitadas..."
     echo ""
     echo "El resultado de los comandos que se ejecuten a continuación debería retornar tres salidas =1."
@@ -97,7 +137,7 @@ then
     echo ""
     read -p "El script se pausará hasta que pulse la tecla Intro, asegúrese de remediar los errores de ser necesario."
     clear
-
+    
     echo "Comprobando que solamente se registran paquetes ICMP estándar, rechazando bogus..."
     echo ""
     echo ""
@@ -120,8 +160,8 @@ then
     echo ""
     read -p "El script se pausará hasta que pulse la tecla Intro, asegúrese de remediar los errores de ser necesario."
     clear
-
-
+    
+    
     echo "Comprobando que reverse path filtering está activado..."
     echo ""
     echo "El resultado de los comandos que se ejecuten a continuación debería retornar salidas con =1."
@@ -146,7 +186,7 @@ then
     echo ""
     read -p "El script se pausará hasta que pulse la tecla Intro, asegúrese de remediar los errores de ser necesario."
     clear
-
+    
     echo "Comprobando que TCP SYN Cookies está habilitado..."
     echo ""
     echo "El resultado de los comandos que se ejecuten a continuación debería retornar salidas con =1."
