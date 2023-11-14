@@ -1,10 +1,10 @@
 # Actualizar controladores de Dominio
 
+*Guía breve para actualizar un controlador de dominio usando Windows Server Core y scripts.*
+
 ## Instalación de Windows Server Core
 
-En primer lugar, crearemos una máquina nueva que será el futuro controlador de dominio principal. El nombre será **DC03-01.wargamesX**. Mantendremos la configuración por defecto que vCenter sugiere para Windows Server 2016 o versiones posteriores pero cambiando las opciones de disco duro a **aprovisionamiento fino** y la red a **PG-VLAN20**. Utilizaremos la última ISO del almacén para Windows Server 2022.
-
-![Imagen de las características de la máquina](../doc/Server-Core/creacion-maquina.jpg)
+*La instalación de ejemplo se ha hecho con una máquina virtual en vCenter.*
 
 Arrancaremos desde la imagen y cambiaremos la distribución de teclado, presionaremos Install, diremos que no tenemos clave de producto, elegiremos la versión **Windows Server 2022 Standard**, elegiremos la opción personalizada y el disco en el que se instalará Windows.
 
@@ -19,7 +19,7 @@ Arrancaremos desde la imagen y cambiaremos la distribución de teclado, presiona
 
 ## Post-Instalación
 
-Una vez terminada la instalación, habrá que configurar la red, habilitar el escritorio remoto (para poder subir los scripts) e instalar las Tools de VMware.
+Una vez terminada la instalación, habrá que configurar la red y habilitar el escritorio remoto (para poder subir los scripts).
 
 Windows Server Core cuenta con un menú llamado SConfig desde el que podremos realizar fácilmente la configuración inicial del equipo.
 
@@ -54,21 +54,16 @@ New-NetIPAddress -InterfaceAlias Ethernet0 -IPAddress 172.20.10.22 -PrefixLength
 La configuración del escritorio remoto será tanto de lo mismo, presionaremos en el siguiente orden *7 > Intro > e > Intro > 2 > Intro > Intro*.
 
 
-### VMware Tools
+### Instalar software por disco
 
-Presionaremos en *Instalar VMware Tools…* en vCenter, esto nos montará el disco de las tools.
-
-![VMware Tools](../doc/Server-Core/tools.jpg)
-
-
-Ahora en el servidor instalaremos las Tools de la siguiente forma:
+En caso de desear instalar alguna clase de software por disco podremos hacerlo de la siguiente forma:
 
 * Abriremos PowerShell (15).
 * Abriremos la unidad de disco que por defecto será D:, en caso de que no lo fuere, es posible listar los volúmenes montados en Windows con el siguiente comando:
 ```PowerShell
 Get-PSDrive -PSProvider 'FileSystem'
 ```
-* Ejecutaremos la instalación con *.\setup.exe*.
+* Ejecutaremos la instalación con *.\setup.exe* o equivalente.
 * Nos dejaremos guiar por el isntalador gráfico y reiniciaremos la máquina.
 
 
@@ -235,7 +230,3 @@ Presionaremos en *Active Directory Domain Services* y ahí nos saldrá un mensaj
 Dejaremos todas las opciones por defecto salvo la de *Remove DNS delegation*. Si nos encontramos con que no podemos avanzar en el wizard, es posible que debamos forzar al controlador de dominio, la opción está en la primera pestaña.
 
 ![Credenciales](../doc/Server-Core/credenciales.jpg)
-
-## Limpiar metadatos ?
-
-Aún queda esclarecer si se debe hacer esto -_-.
